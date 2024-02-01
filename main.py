@@ -1,8 +1,11 @@
 
-from lfunction import mainProcess, dProcess
+from lfunction import yahooData
 
 if __name__ == "__main__":
-    print(dProcess())
+    A = yahooData('META')
+    A.calibKernelDensity()
+    f = A.getUdlgtgtPrice(0.50)
+    print(f)
 
 
 
