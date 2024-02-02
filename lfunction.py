@@ -6,13 +6,8 @@ import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import minimize
 
-def likelyhoodKD(x, kernel, bestparams, data):
-    kde = KernelDensity(kernel=kernel, bandwidth=bestparams).fit(data[:, None])
-    npt = np.array(x).reshape(-1, 1)
-    return np.exp(kde.score_samples(npt))[0]
 
-
-def em_period(x):
+def em_period(x):  # error management: periode
     test_list = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']
     exist_count = test_list.count(x)
     if exist_count > 0:
@@ -22,7 +17,7 @@ def em_period(x):
         return '3mo'
 
 
-def em_kernel(x):
+def em_kernel(x):  # error management: kernel
     test_list = ['gaussian', 'tophat', 'epanechnikov', 'exponential', 'linear', 'cosine']
     exist_count = test_list.count(x)
     if exist_count > 0:
@@ -32,7 +27,7 @@ def em_kernel(x):
         return 'gaussian'
 
 
-def em_Ticker(data, x):
+def em_Ticker(data, x):  # error management: Ticker
     if data.empty:
         print(x + ' is an invalid Ticker')
         return False
@@ -40,7 +35,7 @@ def em_Ticker(data, x):
         return True
 
 
-def em_proba(x):
+def em_proba(x):  # error management: Proba
     if (x > 1.0) or (x < 0.0):
         return False
     else:
@@ -53,7 +48,7 @@ class yahooData():
         self.GetInformation = yf.Ticker(self.udlg)
         self.field = field
         self.dataAll = self.GetInformation.history(period=self.period, interval="1d")
-        self.isTicker = em_Ticker(self.dataAll, self.udlg)
+        self.isTicker = em_Ticker(self.dataAll, self.udlg)  # check if ticker is valid and allow any computation if true
         if self.isTicker:
             self.data = self.dataAll[self.field]
             self.data = self.data.to_numpy()
@@ -66,24 +61,25 @@ class yahooData():
         self.info = yf.Ticker(self.udlg)
         print(self.info)
 
-    def calibKernelDensity(self):
+    def calibKernelDensity(self):  # use Sklearn routine to automatically calibrate the bandwitch
         if self.isTicker:
             bandwidths = 10 ** np.linspace(-1, 1, 100)
             grid = GridSearchCV(KernelDensity(kernel=self.kernel), {'bandwidth': bandwidths}, cv=LeaveOneOut())
             grid.fit(self.data[:, None])
-            self.bestparams = grid.best_params_['bandwidth']
+            self.bestparams = grid.best_params_['bandwidth']  # load the estimator
+            # contructor of the kernel with the optimal parameter
             self.kde = KernelDensity(kernel=self.kernel, bandwidth=self.bestparams).fit(self.data[:, None])
 
-    def dKD(self, x):
+    def dKD(self, x): # compute the pdf at a value x
         npt = np.array(x).reshape(-1, 1)  # from scalar to 2D array
         return np.exp(self.kde.score_samples(npt))[0]
 
-    def pKD(self, x):
+    def pKD(self, x): # compute the cdf at a value x
         if self.isTicker:
             temp = quad(self.dKD, 0, x)[0]
             return 1-temp  # P(x>=X)
 
-    def getUdlgtgtPrice(self, x):
+    def getUdlgtgtPrice(self, x): # imply spot for a cdf value of x
         self.isTicker = em_proba(x)
         def objf(y):
             return (x - self.pKD(y)) ** 2
@@ -96,8 +92,8 @@ class yahooData():
         else:
             print(str(x) + ' is not a valid proba for Ticker: ' + self.udlg)
 
-    def storeRawData(self, x=1):
+    def storeRawData(self, x=1):  # generate a csv file for the yahoo raw data for a given folder and file name x
         if x == 1:
-            self.dataAll.to_csv()
+            self.dataAll.to_csv('output.csv')
         else:
             self.dataAll.to_csv(x)
