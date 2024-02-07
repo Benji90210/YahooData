@@ -92,7 +92,8 @@ class yahooData():
         else:
             print(str(x) + ' is not a valid proba for Ticker: ' + self.udlg)
 
-    def storeRawData(self, x=1):  # generate a csv file for the yahoo raw data for a given folder and file name x
+    def storeRawData(self, x=1):
+        # generate a csv file for the yahoo raw data for a given folder and file name x
         if x == 1:
             self.dataAll.to_csv('output.csv')
         else:
