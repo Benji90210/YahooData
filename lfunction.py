@@ -5,6 +5,7 @@ from sklearn.neighbors import KernelDensity
 import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import minimize
+import pandas as pd
 
 
 def em_period(x):  # error management: periode
@@ -36,10 +37,20 @@ def em_Ticker(data, x):  # error management: Ticker
 
 
 def em_proba(x):  # error management: Proba
-    if (x > 1.0) or (x < 0.0):
-        return False
+    if isinstance(x, list):
+        res = True
+        for i in x:
+            if not em_proba(i):
+                res = False
+        return res
+
     else:
-        return True
+        if (x > 1.0) or (x < 0.0):
+            return False
+        else:
+            return True
+
+
 class yahooData():
     def __init__(self, udlg='META', period='6mo', kernel='gaussian', field='Close'):
         self.udlg = udlg
@@ -55,7 +66,6 @@ class yahooData():
         self.kde = None
         self.bestparams = None
         self.info = None
-
 
     def getInfo(self):
         self.info = yf.Ticker(self.udlg)
@@ -81,16 +91,36 @@ class yahooData():
 
     def getUdlgtgtPrice(self, x): # imply spot for a cdf value of x
         self.isTicker = em_proba(x)
-        def objf(y):
-            return (x - self.pKD(y)) ** 2
 
-        if self.isTicker:
-            res = minimize(objf, 400.0, method='nelder-mead', options={'xatol': 1e-8, 'disp': False})
-            print(str(res['message']) + ' at probe ' + str(x) + ' for ticker: ' + self.udlg)
-            return float(res['x'])
+        if isinstance(x, list):
+            res = []
+            for i in x:
+                res.append(self.getUdlgtgtPrice(i))
 
+            return res
         else:
-            print(str(x) + ' is not a valid proba for Ticker: ' + self.udlg)
+            def objf(y):
+                return (x - self.pKD(y)) ** 2
+
+            if self.isTicker:
+                ''' trace back
+                output = []
+                output.append(['period', self.period])
+                output.append(['kernel', self.kernel])
+                output.append(['field', self.field])
+                output.append(['udlg', self.udlg])
+                output.append(['isTicker', self.isTicker])
+                output.append(['kde', self.kde])
+                df = pd.DataFrame(output)
+                df.to_csv('out.csv')
+                '''
+                x0 = self.data[0]  # initialisation of the solver
+                res = minimize(objf, x0, method='nelder-mead', options={'xatol': 1e-8, 'disp': False})
+                print(str(res['message']) + ' at probe ' + str(x) + ' for ticker: ' + self.udlg)
+                return float(res['x'])
+
+            else:
+                print(str(x) + ' is not a valid proba for Ticker: ' + self.udlg)
 
     def storeRawData(self, x=1):
         # generate a csv file for the yahoo raw data for a given folder and file name x

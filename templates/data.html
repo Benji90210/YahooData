@@ -1,4 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
 {% for key,value in form_data.items() %}
 <h2> {{key}}</h2>
 <p> {{value}}</p>
 {% endfor %}
+<h1>Proba of being served vs Spot Price</h1>
+<img src="{{ url_for('static', filename='img.jpg') }}"
+     class="image"
+/>
+<style>
+  .image {
+    width: 600px;
+  }
+</style>
+</body>
+</html>
