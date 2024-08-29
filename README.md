@@ -1,2 +1,2 @@
 # YahooData
- Import and Analysis of Yahoo Data
+ Import and Analysis of Yahoo Data using Kernel
